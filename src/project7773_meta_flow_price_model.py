@@ -19,6 +19,7 @@ from sklearn.metrics import mean_squared_error
 from datetime import timedelta
 from sklearn.metrics import r2_score
 
+## please make sure that "tsla_tweets_df.csv" is in the same folder as this meta flow file before running
 class Price_LSTMModelFlow(FlowSpec):
     comet_api_key = 'bWPiZX9BSQwryTCmMQzGYDg6d'
     comet_project_name = 'tz2657_group_project_price_model'
@@ -39,7 +40,7 @@ class Price_LSTMModelFlow(FlowSpec):
         start_date1 = datetime.strptime("2021-08-01", '%Y-%m-%d').date()
         start_date = datetime.strptime("2021-09-29", '%Y-%m-%d').date()
         end_date = datetime.strptime("2022-10-01", '%Y-%m-%d').date()
-        
+        # get TSLA trading data
         tsla_data = yf.Ticker(ticker_symbol)
         tsla_df = tsla_data.history(start=start_date1, end=end_date)
         tsla_df.reset_index(inplace=True)
@@ -57,7 +58,7 @@ class Price_LSTMModelFlow(FlowSpec):
         tsla_df['MACD'] = exp1 - exp2
         tsla_df['EMA'] = tsla_df['Close'].ewm(span=20, adjust=False).mean()
         tsla_df['logmomentum'] = np.log(tsla_df['Close'] / tsla_df['Close'].shift(1))
-        
+        ## prepare KDJ calculation
         low_list = tsla_df['Low'].rolling(9, min_periods=9).min()
         low_list.fillna(value = tsla_df['Low'].expanding().min(), inplace = True)
         high_list = tsla_df['High'].rolling(9, min_periods=9).max()
@@ -89,8 +90,8 @@ class Price_LSTMModelFlow(FlowSpec):
         
         
         # 'POSITIVE' -> 1, 'NEGATIVE' -> -1, 'NEUTRAL' -> 0
+        # group by dates to calculate daily sentiment metrics
         grouped_tsla_tweets_df = tsla_tweets_df.groupby('Date')['sentiment'].agg(['mean', 'std'])
-        
         grouped_tsla_tweets_df.rename(columns={'mean': 'sentiment_mean', 'std': 'sentiment_std'}, inplace=True)
         grouped_tsla_tweets_df.reset_index(inplace=True)
         grouped_tsla_tweets_df['Date'] = pd.to_datetime(grouped_tsla_tweets_df['Date']).dt.date
@@ -141,10 +142,8 @@ class Price_LSTMModelFlow(FlowSpec):
                 #today_close = tsla_df.iloc[i]['tsla_Close']
                 today_day_open = tsla_df.iloc[i]['tsla_Open']
                 today_day_close = tsla_df.iloc[i]['tsla_Close']
-
                 price_change = (today_day_close - today_day_open) / today_day_open
                 threshold = 0.005  # 0.5%
-
                 if price_change > threshold:
                     decisions.append('Long')
                 elif price_change < -threshold:
@@ -265,7 +264,6 @@ class Price_LSTMModelFlow(FlowSpec):
         # Log the results
         exp.log_metrics(results)
         exp.end()
-        
         self.next(self.end)
 
     @step
@@ -274,8 +272,6 @@ class Price_LSTMModelFlow(FlowSpec):
 
 if __name__ == '__main__':
     Price_LSTMModelFlow()
-
-
 
 
 

@@ -14,6 +14,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+## please make sure that "tsla_tweets_df.csv" is in the same folder as this meta flow file before running
 class Trade_Decision_LSTMModelFlow(FlowSpec):
     comet_api_key = 'bWPiZX9BSQwryTCmMQzGYDg6d'
     comet_project_name = 'tz2657_group_project_decision_model'
@@ -34,7 +35,7 @@ class Trade_Decision_LSTMModelFlow(FlowSpec):
         start_date1 = datetime.strptime("2021-08-01", '%Y-%m-%d').date()
         start_date = datetime.strptime("2021-09-29", '%Y-%m-%d').date()
         end_date = datetime.strptime("2022-10-01", '%Y-%m-%d').date()
-        
+        # get TSLA trading data
         tsla_data = yf.Ticker(ticker_symbol)
         tsla_df = tsla_data.history(start=start_date1, end=end_date)
         tsla_df.reset_index(inplace=True)
@@ -52,7 +53,7 @@ class Trade_Decision_LSTMModelFlow(FlowSpec):
         tsla_df['MACD'] = exp1 - exp2
         tsla_df['EMA'] = tsla_df['Close'].ewm(span=20, adjust=False).mean()
         tsla_df['logmomentum'] = np.log(tsla_df['Close'] / tsla_df['Close'].shift(1))
-        
+        ## prepare KDJ calculation
         low_list = tsla_df['Low'].rolling(9, min_periods=9).min()
         low_list.fillna(value = tsla_df['Low'].expanding().min(), inplace = True)
         high_list = tsla_df['High'].rolling(9, min_periods=9).max()
@@ -84,8 +85,8 @@ class Trade_Decision_LSTMModelFlow(FlowSpec):
         
         
         # 'POSITIVE' -> 1, 'NEGATIVE' -> -1, 'NEUTRAL' -> 0
+        # group by dates to calculate daily sentiment metrics
         grouped_tsla_tweets_df = tsla_tweets_df.groupby('Date')['sentiment'].agg(['mean', 'std'])
-        
         grouped_tsla_tweets_df.rename(columns={'mean': 'sentiment_mean', 'std': 'sentiment_std'}, inplace=True)
         grouped_tsla_tweets_df.reset_index(inplace=True)
         grouped_tsla_tweets_df['Date'] = pd.to_datetime(grouped_tsla_tweets_df['Date']).dt.date
@@ -270,7 +271,6 @@ class Trade_Decision_LSTMModelFlow(FlowSpec):
         plt.xlabel('Predicted')
         plt.show()
         
-        
         results = {'Accuracy': test_accuracy,
                    'F1 score': test_f1,
                    'Precision': test_precision,
@@ -278,7 +278,6 @@ class Trade_Decision_LSTMModelFlow(FlowSpec):
         # Log the results
         exp.log_metrics(results)
         exp.end()
-        
         self.next(self.backtest_strategy)
      
         
@@ -311,8 +310,6 @@ class Trade_Decision_LSTMModelFlow(FlowSpec):
         print("Total cumulative profit from the strategy:", self.test_data['strat_cumulative_profit'].iloc[-1])
         # print the cumulative profits with dates
         print(self.test_data[['Date', 'daily_profit', 'strat_cumulative_profit']])
-        
-
         initial_open_price = self.test_data['tsla_Open'].iloc[0]
         self.test_data['hold_from_begin_profit'] = self.test_data['tsla_Close'] - initial_open_price
         
