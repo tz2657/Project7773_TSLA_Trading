@@ -22,3 +22,5 @@ This project requires Python 3 and other dependencies listed in `requirements.lo
 * In `src` folder, `project7773_flask_app.py` is the "back-end" tier composed by a Flask app serving model predictions for TSLA close price. The app needs to call http://127.0.0.1:5000/predict?x1={x1}&x2={x2}&x3={x3} with x1 (date), x2 (previous day sentiment mean), x3 (previous day sentiment std) as inputs. You need to use  `python project7773_flask_app.py` to run this file in terminal.
 * `project7773_streamlit.py` is the "front-end" tier, composed by a Streamlit app that accepts a numerical input from the user, performs a GET request to your Flask app with that input, and displays the prediction. You need to use `streamlit run project7773_streamlit.py` to run this file.
 
+## Github
+Github repository link: https://github.com/tz2657/group_project7773_Tianhao_Ruibin_Kevin
